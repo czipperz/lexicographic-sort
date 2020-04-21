@@ -29,7 +29,9 @@ static void read_file(cz::Buffer_Array& buffer_array,
     while (1) {
         size_t buffer_len = fread(buffer, 1, sizeof(buffer), file);
         if (buffer_len == 0) {
-            add_value(buckets, value);
+            if (value.len() > 0) {
+                add_value(buckets, value);
+            }
             break;
         }
 
