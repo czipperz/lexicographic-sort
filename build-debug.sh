@@ -8,5 +8,3 @@ mkdir -p build/debug
 (cd build/debug
  cmake -DCMAKE_BUILD_TYPE=Debug ../.. >/dev/null
  cmake --build .)
-
-./run-tests.sh
