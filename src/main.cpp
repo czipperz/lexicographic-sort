@@ -7,6 +7,19 @@
 #include <cz/string.hpp>
 #include <cz/vector.hpp>
 
+static void add_value(cz::Vector<cz::Vector<cz::Str> >& buckets, cz::Str value) {
+    if (buckets.len() <= value.len) {
+        size_t extra = value.len - buckets.len() + 1;
+        buckets.reserve(cz::heap_allocator(), extra);
+        for (size_t i = 0; i < extra; ++i) {
+            buckets.push({});
+        }
+    }
+
+    buckets[value.len].reserve(cz::heap_allocator(), 1);
+    buckets[value.len].push(value);
+}
+
 int main(int argc, char** argv) {
     cz::Buffer_Array buffer_array;
     buffer_array.create();
@@ -20,7 +33,7 @@ int main(int argc, char** argv) {
     while (1) {
         size_t buffer_len = fread(buffer, 1, sizeof(buffer), stdin);
         if (buffer_len == 0) {
-            // Todo: add this value
+            add_value(buckets, value);
             break;
         }
 
@@ -30,25 +43,17 @@ int main(int argc, char** argv) {
             const char* end = str.find('\n');
             if (end) {
                 value.reserve(buffer_array.allocator(), end - start);
-                value.append(str);
+                value.append({start, end - start});
                 value.realloc(buffer_array.allocator());
 
-                if (buckets.len() < value.len()) {
-                    size_t extra = value.len() - buckets.len();
-                    buckets.reserve(cz::heap_allocator(), extra);
-                    for (size_t i = 0; i < extra; ++i) {
-                        buckets.push({});
-                    }
-                }
-
-                buckets[value.len()].reserve(cz::heap_allocator(), 1);
-                buckets[value.len()].push(value);
+                add_value(buckets, value);
 
                 value = {};
                 start = end + 1;
             } else {
                 value.reserve(buffer_array.allocator(), str.len);
                 value.append(str);
+                break;
             }
         }
     }
