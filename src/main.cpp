@@ -69,6 +69,19 @@ static void print_results(cz::Vector<cz::Vector<cz::Str> >& buckets, FILE* file,
     }
 }
 
+void print_usage(char* program_name) {
+    fprintf(stderr, "Usage: %s [-print0] [-0] [-] [FILE]...\n", program_name);
+    fprintf(stderr,
+            "Sort strings lexicographically -- ie by length and then alphabetically inside the "
+            "length.\n\
+If no files are given, stdin is read.\n\
+\n\
+Options:\n\
+  -0          separate strings by null character instead of newline character\n\
+  -print0     print strings separated by null character instead of newline character\n\
+  -           read from stdin this is done by default if no other files are specified\n");
+}
+
 int main(int argc, char** argv) {
     cz::Buffer_Array buffer_array;
     buffer_array.create();
@@ -77,6 +90,34 @@ int main(int argc, char** argv) {
     cz::Vector<cz::Vector<cz::Str> > buckets = {};
     CZ_DEFER(buckets.drop(cz::heap_allocator()));
 
-    read_file(buffer_array, buckets, stdin, '\n');
-    print_results(buckets, stdout, '\n');
+    char in_separator = '\n';
+    char out_separator = '\n';
+    bool read_stdin = true;
+
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "-0") == 0) {
+            in_separator = 0;
+        } else if (strcmp(argv[i], "-print0") == 0) {
+            out_separator = 0;
+        } else if (strcmp(argv[i], "-") == 0) {
+            read_file(buffer_array, buckets, stdin, in_separator);
+            read_stdin = false;
+        } else {
+            FILE* file = fopen(argv[i], "r");
+            if (file) {
+                read_file(buffer_array, buckets, file, in_separator);
+                fclose(file);
+                read_stdin = false;
+            } else {
+                fprintf(stderr, "Couldn't open file `%s`\n", argv[i]);
+                print_usage(argv[0]);
+            }
+        }
+    }
+
+    if (read_stdin) {
+        read_file(buffer_array, buckets, stdin, in_separator);
+    }
+
+    print_results(buckets, stdout, out_separator);
 }
